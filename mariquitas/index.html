@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>El misterio de las mariquitas</title>
+<style>
+html,body{margin:0;height:100%;background:#111;overflow:hidden;font-family:Verdana,sans-serif}
+#stage{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+#frame{position:relative;width:min(100vw,calc(100vh*16/9));height:min(100vh,calc(100vw*9/16));background:#000}
+#frame img,#frame video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:none}
+#play{white-space:nowrap;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:clamp(20px,3vw,40px);background:#F2B33D;color:#1F2A44;border:none;border-radius:999px;padding:.6em 1.4em;font-weight:bold;cursor:pointer;display:none;box-shadow:0 6px 20px rgba(0,0,0,.4)}
+#bar{position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:6px 14px;color:#ccc;font-size:14px;background:rgba(0,0,0,.55);opacity:0;transition:opacity .3s}
+body:hover #bar{opacity:1}
+#bar button{background:none;border:1px solid #777;color:#eee;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:14px}
+</style></head><body>
+<div id="stage"><div id="frame"><img id="img" alt=""><video id="vid" src="declaraciones.mp4" preload="auto" playsinline></video><button id="play">▶ Escuchar las declaraciones</button></div></div>
+<div id="bar"><span><button id="prev">◀</button> <button id="next">▶</button> <span id="num"></span></span><span>← → per cambiare slide · F schermo intero · clic sul video: play/pausa</span><button id="fs">⛶ Schermo intero</button></div>
+<script>
+const ORDER = ["l2-cover", "l2-plan", "l2-video", "l2-tabla", "l2-pruebas", "pA", "iA", "pB", "iB", "pC", "iC", "pD", "iD", "pE", "iE", "pF", "iF", "pG", "iG", "l2-noticiario", "l2-acusacion", "l2-votacion", "l2-confesion", "l2-anexo", "al1", "al2", "al3", "al4", "al5", "l2-caso", "l2-sospechosos", "l2-palabras", "l2-alibi-glosas"];
+let i = 0;
+const img=document.getElementById('img'), vid=document.getElementById('vid'), play=document.getElementById('play'), num=document.getElementById('num');
+ORDER.forEach(s=>{ const p=new Image(); p.src='slides/'+s+'.jpg'; });
+function show(n){
+  i=Math.max(0,Math.min(ORDER.length-1,n));
+  const s=ORDER[i];
+  vid.pause();
+  if(s==='l2-video'){
+    img.style.display='none'; vid.style.display='block'; vid.poster='slides/l2-video.jpg';
+    play.style.display = vid.currentTime>0 && !vid.ended ? 'none':'block';
+    if(vid.ended) vid.currentTime=0;
+  } else {
+    vid.style.display='none'; play.style.display='none';
+    img.src='slides/'+s+'.jpg'; img.style.display='block';
+  }
+  num.textContent=(i+1)+' / '+ORDER.length;
+  try{ history.replaceState(null,'','#'+(i+1)); }catch(e){}
+}
+function toggleVideo(){ if(vid.paused){ vid.play(); play.style.display='none'; } else { vid.pause(); play.style.display='block'; play.textContent='▶ Continuar'; } }
+play.onclick=e=>{e.stopPropagation(); toggleVideo();};
+vid.onclick=e=>{e.stopPropagation(); toggleVideo();};
+vid.onended=()=>{ play.textContent='▶ Escuchar otra vez'; play.style.display='block'; };
+img.onclick=()=>show(i+1);
+document.getElementById('prev').onclick=()=>show(i-1);
+document.getElementById('next').onclick=()=>show(i+1);
+function fs(){ if(!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{}); else document.exitFullscreen(); }
+document.getElementById('fs').onclick=fs;
+document.addEventListener('keydown',e=>{
+  if(['ArrowRight','PageDown','Enter'].includes(e.key)){ show(i+1); e.preventDefault(); }
+  else if(['ArrowLeft','PageUp','Backspace'].includes(e.key)){ show(i-1); e.preventDefault(); }
+  else if(e.key===' '){ if(ORDER[i]==='l2-video') toggleVideo(); else show(i+1); e.preventDefault(); }
+  else if(e.key==='f'||e.key==='F') fs();
+  else if(e.key==='Home') show(0); else if(e.key==='End') show(ORDER.length-1);
+});
+const h=parseInt(location.hash.slice(1)); show(isNaN(h)?0:h-1);
+</script></body></html>
